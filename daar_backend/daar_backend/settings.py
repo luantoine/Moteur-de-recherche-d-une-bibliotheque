@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
+    'daar_backend.api',
     'corsheaders',
 ]
 
@@ -127,3 +127,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# MongoDB Configuration
+MONGO_CONNEXION = "mongodb+srv://yollowdream:sOtGzsmwTgfbj1NT@cluster0.zj4y6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
