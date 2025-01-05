@@ -1,14 +1,30 @@
+# load_books.py
+
 import os
+import sys
 import django
 import requests
 from bs4 import BeautifulSoup
 from time import sleep
 
+from pymongo.errors import PyMongoError, DuplicateKeyError
+from tqdm import tqdm
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'daar_backend.daar_backend.settings')
+# Déterminer le chemin absolu du répertoire actuel (scripts/)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Remonter jusqu'au répertoire racine du projet (DAAR---Moteur-de-recherche-d-une-bibliotheque/)
+# Étant donné la structure, nous remontons de deux niveaux : scripts/ -> api/ -> daar_backend/
+project_root = os.path.abspath(os.path.join(current_dir, '../../'))
+
+# Ajouter le répertoire racine au PYTHONPATH
+sys.path.append(project_root)
+
+# Configuration Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'daar_backend.daar_backend.settings')  # Chemin correct vers settings.py
 django.setup()
 
-from daar_backend.api.services.mongo_client import mongo_client
+from api.services.mongo_client import mongo_client
 
 def fetch_gutenberg_books(limit=1664):
     """
@@ -18,7 +34,7 @@ def fetch_gutenberg_books(limit=1664):
       - La liste d'auteurs, de sujets, de langues, etc.
       - Le lien vers le texte brut (text_url) s'il existe
       - Le lien vers l'image de couverture (cover_url) s'il existe
-      - Les autres informations qui pourront etres utiles
+      - Les autres informations qui pourront être utiles
     """
 
     base_url = "https://gutendex.com/books/"
@@ -77,15 +93,26 @@ def fetch_gutenberg_books(limit=1664):
                 "cover_url": cover_url,
             }
 
-            # Insert/Update dans la collection
-            existing = collection.find_one({"book_id": str(book_id)})
-            if existing:
-                print(f"    > Livre ID={book_id} existe déjà, mise à jour...")
-                collection.update_one({"_id": existing["_id"]}, {"$set": book_data})
-            else:
-                collection.insert_one(book_data)
-                fetched_count += 1
-                print(f"    > Livre '{title}' (ID={book_id}) inséré. (Total={fetched_count})")
+            try:
+                # Utiliser upsert=True pour insérer ou mettre à jour le document
+                result = collection.update_one(
+                    {"book_id": str(book_id)},
+                    {"$set": book_data},
+                    upsert=True  # Insère le document si aucun n'est trouvé
+                )
+                if result.upserted_id:
+                    fetched_count += 1
+                    print(f"    > Livre '{title}' (ID={book_id}) inséré. (Total={fetched_count})")
+                else:
+                    print(f"    > Livre ID={book_id} mis à jour.")
+            except DuplicateKeyError:
+                print(f"    > Livre ID={book_id} existe déjà (violated unique index). Mise à jour en cours...")
+                try:
+                    collection.update_one({"book_id": str(book_id)}, {"$set": book_data})
+                except PyMongoError as e:
+                    print(f"[ERREUR] Échec de la mise à jour du livre ID={book_id} : {e}")
+            except PyMongoError as e:
+                print(f"[ERREUR] Échec de la mise à jour/insertion du livre ID={book_id} : {e}")
 
             sleep(0.01)
 
