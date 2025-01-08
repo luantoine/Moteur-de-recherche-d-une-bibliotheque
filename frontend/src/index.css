@@ -11,3 +11,52 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+.book-cover {
+  width: 100px;
+  height: auto;
+  margin-right: 10px;
+  transition: transform 0.2s;
+}
+
+.book-cover:hover {
+  transform: scale(1.05);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  max-width: 600px;
+  max-height: 80%;
+  overflow: auto;
+  position: relative;
+  border-radius: 5px;
+}
+
+.modal-content button.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ddd;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.modal-content button.close-btn:hover {
+  background: #bbb;
+}
