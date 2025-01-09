@@ -1,60 +1,68 @@
-# scripts/create_text_index.py
-
+import psycopg2
 import os
 import sys
-import django
-from pymongo.errors import OperationFailure
 
-# Définir le chemin du projet pour que Python puisse trouver 'daar_backend'
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)  # Cela devrait pointer vers 'api/'
-grandparent_dir = os.path.dirname(parent_dir)  # Cela devrait pointer vers 'daar_backend/'
+project_root = os.path.abspath(os.path.join(current_dir, "../../.."))
+sys.path.append(project_root) 
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'daar_backend.daar_backend.settings')
+from daar_backend.daar_backend.settings import DATABASES
 
-# Ajouter le répertoire 'daar_backend' au PYTHONPATH
-sys.path.append(grandparent_dir)
-
-# Définir le module de paramètres Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'daar_backend.settings')
-django.setup()
-
-from api.services.mongo_client import mongo_client
 
 def create_text_index():
-    """
-    Crée un index textuel sur les champs "title" et "authors.name" dans la collection "gutenberg_books".
-    """
     try:
-        collection = mongo_client.get_collection("gutenberg_books")
-        
-        # Définir les champs à indexer
-        index_fields = [
-            ("title", "text"),
-            ("authors.name", "text")
-        ]
-        
-        # Nom de l'index
-        index_name = "title_authors_text_index"
-        
-        # Créer l'index textuel
-        result = collection.create_index(
-            index_fields,
-            name=index_name,
-            default_language="english",
-            background=True  # Crée l'index en arrière-plan
+        db_config = DATABASES['default']
+        # Connexion à PostgreSQL
+        conn = psycopg2.connect(
+            dbname=db_config['NAME'],
+            user=db_config['USER'],
+            password=db_config['PASSWORD'],
+            host=db_config['HOST'],
+            port=db_config['PORT']
         )
-        
-        print(f"Index textuel '{index_name}' créé avec succès : {result}")
-    
-    except OperationFailure as e:
-        if "already exists" in str(e):
-            print(f"L'index '{index_name}' existe déjà.")
-        else:
-            print(f"Erreur lors de la création de l'index : {e}")
-    except Exception as e:
-        print(f"Une erreur inattendue est survenue : {e}")
+        cursor = conn.cursor()
 
-def main():
-    create_text_index()
+        # colonne `search_content`
+        cursor.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_name = 'books' AND column_name = 'search_content'
+                ) THEN
+                    ALTER TABLE books ADD COLUMN search_content tsvector;
+                END IF;
+            END $$;
+        """)
+
+        cursor.execute("""
+            UPDATE books
+            SET search_content = to_tsvector(
+                'english',
+                title || ' ' || (
+                    SELECT string_agg(value, ' ')
+                    FROM jsonb_array_elements_text(authors) AS value
+                )
+            );
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_books_search
+            ON books USING gin(search_content);
+        """)
+
+        conn.commit()
+        print("Index textuel créé avec succès.")
+
+    except Exception as e:
+        print(f"Erreur lors de la création de l'index textuel : {e}")
+
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
 
 if __name__ == "__main__":
-    main()
+    create_text_index()

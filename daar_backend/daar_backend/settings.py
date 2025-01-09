@@ -130,3 +130,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # MongoDB Configuration
 MONGO_CONNEXION = "mongodb+srv://yollowdream:sOtGzsmwTgfbj1NT@cluster0.zj4y6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+import os
+# PostgreSQL Configuration (dans le docker)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'library_db'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'daar2025'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+    }
+}
