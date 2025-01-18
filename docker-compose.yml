@@ -1,13 +1,20 @@
 version: "3.10"
 
+networks:
+  app-network:
+    driver: bridge
+    
 services:
   backend:
+    image: luantoine/daar_backend:latest
     build:
       context: ./daar_backend
       dockerfile: Dockerfile
     container_name: django-backend
     ports:
       - "8000:8000"
+    networks:
+      - app-network
     volumes:
       - ./daar_backend:/app
     depends_on:
@@ -21,6 +28,7 @@ services:
       - DB_PASSWORD=daar2025
 
   frontend:
+    image: luantoine/daar_frontend:latest
     build:
       context: ./frontend
     container_name: react-frontend
@@ -31,11 +39,14 @@ services:
 
   db:
     image: postgres:14
+    container_name: postgres-db
     ports:
       - "5432:5432"
+    networks:
+      - app-network
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: your_password
+      POSTGRES_PASSWORD: daar2025
       POSTGRES_DB: library_db
     volumes:
       - postgres_data:/var/lib/postgresql/data

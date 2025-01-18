@@ -2,7 +2,6 @@
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-from .services.mongo_client import mongo_client
 import re
 from bson import ObjectId
 import logging
