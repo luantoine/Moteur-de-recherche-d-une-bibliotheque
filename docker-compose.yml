@@ -9,7 +9,6 @@ services:
     image: luantoine/daar_backend:latest
     build:
       context: ./daar_backend
-      dockerfile: Dockerfile
     container_name: django-backend
     ports:
       - "8000:8000"
@@ -17,15 +16,13 @@ services:
       - app-network
     volumes:
       - ./daar_backend:/app
-    depends_on:
-      - db
     environment:
       - DEBUG=True
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=library_db
-      - DB_USER=postgres
-      - DB_PASSWORD=daar2025
+      - DB_HOST=daar2025-luluantoinex-745c.b.aivencloud.com
+      - DB_PORT=25492
+      - DB_NAME=defaultdb
+      - DB_USER=avnadmin
+      - DB_PASSWORD=AVNS_swNH8lITHgvFjg-tf5M
 
   frontend:
     image: luantoine/daar_frontend:latest
@@ -37,32 +34,6 @@ services:
     volumes:
       - ./frontend:/app
 
-  db:
-    image: postgres:14
-    container_name: postgres-db
-    ports:
-      - "5432:5432"
-    networks:
-      - app-network
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: daar2025
-      POSTGRES_DB: library_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "lesA@daar.com"
-      PGADMIN_DEFAULT_PASSWORD: "adminpassword"
-    ports:
-      - "5050:80"
-    networks:
-      - app-network
-    depends_on:
-      - db
 
 volumes:
   postgres_data:

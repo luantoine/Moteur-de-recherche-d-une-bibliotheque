@@ -13,3 +13,4 @@ Thumbs.db
 
 pg_hba.conf
 postgresql.conf
+library_db.sql
