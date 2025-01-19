@@ -3,7 +3,6 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 import re
-from bson import ObjectId
 import logging
 from django.db import connection
 
