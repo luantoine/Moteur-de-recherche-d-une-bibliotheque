@@ -12,3 +12,7 @@ https://hub.docker.com/repositories/luantoine
 # PostgreSQL 🐘
 
 - psql -h <add_ip> -p 5432 -U <antoine/andre/arnaud> -d library_db
+
+### pgAdmin
+
+- http://localhost:5050
