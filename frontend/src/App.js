@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
+//import KmpSearchComponent from './components/kmp';
 
 const API_BASE = 'http://127.0.0.1:8000/api';
 
@@ -260,6 +261,105 @@ function BookDetailModal({ book, onClose }) {
   );
 }
 
+
+function KmpSearchComponent({ onSearchResult, onBookSelect }) {
+    const [pattern, setPattern] = useState('');
+    const [results, setResults] = useState([]);
+    const [suggestions, setSuggestions] = useState([]); // Ajout de suggestions comme pour le composant avancé
+    const [loading, setLoading] = useState(false);
+  
+    const handleKmpSearch = async () => {
+      if (!pattern) return;
+  
+      setLoading(true);
+      const cacheKey = `kmp:${pattern}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const data = JSON.parse(cached);
+        setResults(data.results);
+        setSuggestions(data.suggestions || []); // Si des suggestions sont disponibles
+        onSearchResult('kmp', pattern, data);
+        setLoading(false);
+        return;
+      }
+  
+      try {
+        const response = await fetch(`${API_BASE}/kmp-search-books?pattern=${encodeURIComponent(pattern)}`);
+        const data = await response.json();
+  
+        if (response.ok) {
+          setResults(data.results || []);
+          setSuggestions(data.suggestions || []);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(data));
+          } catch (e) {
+            console.error('Erreur lors de la mise en cache:', e);
+          }
+          onSearchResult('kmp', pattern, data);
+        } else {
+          console.error(data.error || 'Erreur lors de la recherche KMP');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la recherche KMP :', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    return (
+      <div>
+        <h2>Recherche KMP</h2>
+        <input
+          type="text"
+          value={pattern}
+          onChange={(e) => setPattern(e.target.value)}
+          placeholder="Entrez un motif pour la recherche KMP"
+        />
+        <button
+          onClick={handleKmpSearch}
+          disabled={loading}
+          style={{ opacity: loading ? 0.5 : 1 }}
+        >
+          {loading ? 'Chargement...' : 'Chercher (KMP)'}
+        </button>
+  
+        <h3>Résultats :</h3>
+        <ul>
+          {results
+            .filter((book) => book._id && book.title) // Filtrer les résultats valides
+            .map((book) => (
+              <li
+                key={book._id}
+                onClick={() => onBookSelect(book)}
+                style={{ cursor: 'pointer', marginBottom: '10px' }}
+              >
+                <strong>{book.title}</strong> ({book.occurrences || 0} occurrences)
+              </li>
+            ))}
+          {results.length === 0 && !loading && <p>Aucun résultat trouvé.</p>}
+        </ul>
+  
+        {suggestions.length > 0 && (
+          <>
+            <h3>Suggestions :</h3>
+            <ul>
+              {suggestions.map((book) => (
+                <li
+                  key={book._id}
+                  onClick={() => onBookSelect(book)}
+                  style={{ cursor: 'pointer', marginBottom: '10px' }}
+                >
+                  <strong>{book.title}</strong>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    );
+  }
+  
+
 function App() {
   const [tab, setTab] = useState('search'); // 'search' ou 'advanced'
   const [history, setHistory] = useState([]);
@@ -298,19 +398,27 @@ function App() {
         <nav>
           <button onClick={() => setTab('search')}>Recherche</button>
           <button onClick={() => setTab('advanced')}>Recherche Avancée</button>
+          <button onClick={() => setTab('kmp')}>KMP Search</button>
         </nav>
       </header>
       <main>
-        {tab === 'search' ? (
+        {tab === 'search' && (
           <SearchComponent onSearchResult={handleSearchResult} onBookSelect={handleBookSelect} />
-        ) : (
+        )}
+        {tab === 'advanced' && (
           <AdvancedSearchComponent onSearchResult={handleSearchResult} onBookSelect={handleBookSelect} />
+        )}
+        {tab === 'kmp' && (
+          <KmpSearchComponent onSearchResult={handleSearchResult} onBookSelect={handleBookSelect} />
         )}
         <HistoryComponent history={history} onHistorySelect={handleHistorySelect} />
         {selectedBook && <BookDetailModal book={selectedBook} onClose={handleModalClose} />}
+
       </main>
     </div>
   );
 }
+
+
 
 export default App;

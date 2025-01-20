@@ -5,6 +5,8 @@ from django.views.decorators.http import require_GET
 import re
 import logging
 from django.db import connection
+from api.algorithms.kmp import kmp_search
+from api.algorithms.automate import search_regex, minimize_dfa, ndfa_to_dfa, to_ndfa, parse
 
 # Configuration du logger
 logger = logging.getLogger('api')  # Assurez-vous que le nom correspond à votre configuration de logging
@@ -351,3 +353,106 @@ def get_suggestions(top_results, max_suggestions=10):
     except Exception as e:
         logger.error(f"Erreur lors de la génération des suggestions: {e}")
         return []
+
+# Implém algo
+
+@require_GET
+def kmp_search_books(request):
+    """
+    Recherche KMP
+    """
+    try:
+        pattern = request.GET.get('pattern', '').strip()
+        if not pattern:
+            return JsonResponse({"error": "Aucun pattern fourni."}, status=400)
+        
+        # s'il y a une limite en parametre
+        limit = int(request.GET.get('limit', 50))
+
+        # il y a une limite (on peut enlever)
+        sql_query = f"""
+            SELECT id, title, text_content
+            FROM books
+            LIMIT {limit};
+        """
+        books = execute_sql_query(sql_query)
+
+        results = []
+        for book in books:
+            text = book['text_content'] or ''
+            title = book['title'] or ''
+            
+            title_matches = kmp_search(title, pattern)
+            text_matches = kmp_search(text, pattern)
+
+            occurrences_in_title = len(title_matches)
+            occurrences_in_text = len(text_matches)
+
+            # priorité pour le titre
+            if occurrences_in_title > 0 or occurrences_in_text > 0:
+                book['occurrences_in_title'] = occurrences_in_title
+                book['occurrences_in_text'] = occurrences_in_text
+                book['priority'] = 1 if occurrences_in_title > 0 else 2
+                book['total_occurrences'] = occurrences_in_title + occurrences_in_text
+                results.append(book)
+
+        results.sort(x=lambda b: (b['priority'], -b['total_occurrences']))
+
+        return JsonResponse({"results": results}, status=200)
+    except Exception as e:
+        logger.error(f"Erreur lors de la recherche KMP : {e}")
+        return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
+    
+
+@require_GET
+def automate_regex_search_books(request):
+    """
+    Recherche RegEx via automate DFA
+    """
+    try:
+        regex_pattern = request.GET.get('regex', '').strip()
+        if not regex_pattern:
+            return JsonResponse({"error": "Aucune expression régulière fournie."}, status=400)
+        
+        limit = int(request.GET.get('limit', 50))
+        
+        syntax_tree = parse(regex_pattern)
+        nfa = to_ndfa(syntax_tree)
+        dfa = ndfa_to_dfa(nfa)
+        minimized_dfa = minimize_dfa(dfa)
+
+        sql_query = f"""
+            SELECT id, title, text_content
+            FROM books
+            LIMIT {limit};
+        """
+        books = execute_sql_query(sql_query)
+
+        results = []
+        for book in books:
+            text = book['text_content'] or ''
+            title = book['title'] or ''
+            
+            title_matches = search_regex(minimized_dfa, title)
+            text_matches = search_regex(minimized_dfa, text)
+
+            occurrences_in_title = len(title_matches)
+            occurrences_in_text = len(text_matches)
+            
+            if occurrences_in_title > 0 or occurrences_in_text > 0:
+                book['occurrences_in_title'] = occurrences_in_title
+                book['occurrences_in_text'] = occurrences_in_text
+                book['total_occurrences'] = occurrences_in_title + occurrences_in_text
+                
+                # priorité pour le titre
+                book['priority'] = 1 if occurrences_in_title > 0 else 2
+                
+                results.append(book)
+
+        results.sort(x=lambda b: (b['priority'], -b['total_occurrences']))
+
+        return JsonResponse({"results": results}, status=200)
+
+    except Exception as e:
+        logger.error(f"Erreur lors de la recherche RegEx automate : {e}")
+        return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
