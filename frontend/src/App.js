@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
 
-const API_BASE = 'http://127.0.0.1:8000/api';
 
 function formatAuthors(authors) {
     if (!authors || !Array.isArray(authors) || authors.length === 0) {
