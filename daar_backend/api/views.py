@@ -391,15 +391,14 @@ def kmp_search_books(request):
 
         # il y a une limite (on peut enlever)
         sql_query = f"""
-            SELECT id, title, text_content, centrality
+            SELECT id, title, search_content, centrality
             FROM books
-            WHERE search_content @@ plainto_tsquery('english', %s)
         """
         books = execute_sql_query(sql_query, [pattern])
 
         results = []
         for book in books:
-            text = book['text_content'] or ''
+            text = book['search_content'] or ''
             title = book['title'] or ''
             
             title_matches = kmp_search(title, pattern)
@@ -449,15 +448,14 @@ def automate_regex_search_books(request):
         minimized_dfa = minimize_dfa(dfa)
 
         sql_query = f"""
-            SELECT id, title, text_content, centrality
+            SELECT id, title, search_content, centrality
             FROM books
-            WHERE search_content @@ plainto_tsquery('english', %s)
         """
         books = execute_sql_query(sql_query, [regex_pattern])
 
         results = []
         for book in books:
-            text = book['text_content'] or ''
+            text = book['search_content'] or ''
             title = book['title'] or ''
             
             title_matches = search_regex(minimized_dfa, title)
