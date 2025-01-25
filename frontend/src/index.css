@@ -1,62 +1,222 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  /* --- Global Styles --- */
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #FEE8E8;
+    color: #333; /* Couleur principale du texte */
+    line-height: 1.6; /* Espacement vertical pour améliorer la lisibilité */
+  }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-.book-cover {
-  width: 100px;
-  height: auto;
-  margin-right: 10px;
-  transition: transform 0.2s;
-}
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  }
 
-.book-cover:hover {
-  transform: scale(1.05);
-}
+  /* --- Book Cover Styles --- */
+  .book-cover {
+    width: 100px;
+    height: auto;
+    margin-right: 10px;
+    border-radius: 8px; /* Coins arrondis */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombre douce */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
+  .book-cover:hover {
+    transform: scale(1.1); /* Zoom plus dynamique */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Ombre plus marquée */
+  }
 
-.modal-content {
-  background: white;
-  padding: 20px;
-  max-width: 600px;
-  max-height: 80%;
-  overflow: auto;
-  position: relative;
-  border-radius: 5px;
-}
+  /* --- Modal Styles --- */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6); /* Couleur plus foncée pour plus de contraste */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
 
-.modal-content button.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #ddd;
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
-}
+  .modal-content {
+    background: #fff;
+    padding: 20px;
+    max-width: 600px;
+    max-height: 80%;
+    overflow-y: auto;
+    position: relative;
+    border-radius: 10px; /* Coins arrondis */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Ombre subtile */
+  }
 
-.modal-content button.close-btn:hover {
-  background: #bbb;
-}
+  .modal-content button.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #FEE8E8;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 1.2em;
+    color: #333;
+    transition: background 0.3s;
+  }
+
+  .modal-content button.close-btn:hover {
+    background: #FCA5A5;
+  }
+
+  /* --- Header and Banner --- */
+  .banniere {
+    color: wheat;
+    background-color: #BD5555;
+    border-bottom: 5px solid #aa6767;
+    padding: 10px;
+  }
+
+  .titleApp {
+    font-family: "Nabla", sans-serif;
+    text-align: center;
+    font-size: 32px;
+    margin: 0;
+  }
+
+  /* --- Search Input and Buttons --- */
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .searchInput {
+    width: 250px;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #9C7171;
+    background-color: #FEE8E8;
+    color: #333;
+    margin: 10px 0;
+    flex: 1; /* L'input occupe tout l'espace disponible */
+    width: auto; /* Redondant avec flex: 1, mais utile pour la clarté */
+  }
+
+  /* Conteneur de la barre de recherche */
+  .search-bar {
+    display: flex; /* Aligne les éléments sur une seule ligne */
+    justify-content: center; /* Centre le conteneur */
+    align-items: center; /* Aligne verticalement */
+    gap: 10px; /* Espacement entre l'input et le bouton */
+    width: 100%; /* S'adapte à la largeur disponible */
+    max-width: 400px; /* Limite la largeur maximale */
+    margin: 10px auto; /* Centrage horizontal */
+  }
+
+  /* Ajustement du bouton */
+  .searchButton {
+    flex-shrink: 0; /* Le bouton conserve sa taille minimale */
+  }
+
+
+  button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #BD5555;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+    margin: 5px;
+  }
+
+  .searchChoosed{
+    background-color: #9C7171;
+    transform: scale(1.1);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  button:hover {
+    background-color: #9C7171;
+    transform: scale(1.1);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  /* --- Book List and Items --- */
+  .book-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .book-item {
+    display: flex;
+    align-items: center;
+    background-color: #FFF5F5;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-inline: 50px;
+  }
+
+  .book-item:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .book-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .book-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .book-details h2 {
+    margin: 0;
+    font-size: 1.5em;
+    color: #333;
+  }
+
+  .book-details p {
+    margin: 0;
+    color: #555;
+  }
+
+  /* --- Responsive Design --- */
+  @media (min-width: 768px) {
+    .searchInput {
+      width: 300px;
+    }
+
+    button {
+      padding: 12px 25px;
+    }
+
+    .book-item {
+      padding: 20px;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .searchInput {
+      width: 400px;
+    }
+  }

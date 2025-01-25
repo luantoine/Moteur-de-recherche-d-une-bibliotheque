@@ -1,10 +1,10 @@
 const config = {
     development: {
-        backendUrl: "http://localhost:8080/api/",
+        backendUrl: "http://127.0.0.1:8000/api",
     },
     production: {
         backendUrl: "",
     },
 };
 
-export default config;
+export const API_BASE = config.development.backendUrl;
