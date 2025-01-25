@@ -38,14 +38,6 @@ const Book = (book, withInfo) => {
         console.log("Livre sélectionné :", book);
     }
 
-    if (withInfo){
-        return(
-            <div>
-
-            </div>
-        )
-    }
-
     return (
         <div
             onClick={() => onBookSelect(book)}

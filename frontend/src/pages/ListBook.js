@@ -27,7 +27,6 @@ const ListBook = () => {
                 const uri = searchType === "advanced" ? ADVANCED_SEARCH_API : SIMPLE_SEARCH_API;
                 const response = await fetch(`${uri}?query=${encodeURIComponent(query)}`);
                 const data = await response.json();
-<Suspense></Suspense>
                 if (!response.ok) {
                     throw new Error(data.message || "Erreur lors de la recherche.");
                 }

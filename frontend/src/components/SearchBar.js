@@ -32,6 +32,7 @@ const SearchBar = () => {
 
     return (
         <div className={"container"}>
+
             <div className={"searchBar"}>
                 <input
                     type="text"
