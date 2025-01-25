@@ -10,9 +10,10 @@ from tqdm import tqdm
 # Connexion à PostgreSQL
 conn = psycopg2.connect(
     dbname="library_db",
+    port="5432",
     user="postgres",
     password="daar2025",
-    host="localhost"
+    host="db"
 )
 cursor = conn.cursor()
 
@@ -35,7 +36,7 @@ def fetch_and_store_books(limit=1664):
         resp = requests.get(page_url)
         if resp.status_code != 200:
             print(f"    > Impossible de charger la page {page_url}, arrêt")
-            break
+            continue
 
         data = resp.json()
         results = data.get("results", [])
@@ -72,7 +73,7 @@ def fetch_and_store_books(limit=1664):
                 try:
                     text_resp = requests.get(text_url)
                     if text_resp.status_code == 200:
-                        text_content = text_resp.text
+                        text_content = text_resp.text.replace('\x00', '')
                     else:
                         print(f"    > Impossible de télécharger le texte pour {title} (ID={book_id})")
                 except Exception as e:

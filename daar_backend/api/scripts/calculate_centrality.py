@@ -9,7 +9,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, "../../.."))
 sys.path.append(project_root) 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'daar_backend.daar_backend.settings')
-from daar_backend.daar_backend.settings import DATABASES
+from daar_backend.settings import DATABASES
 
 
 def fetch_books(cursor):

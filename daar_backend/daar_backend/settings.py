@@ -136,10 +136,10 @@ import os
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'library_db'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'daar2025'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': os.environ.get('DB_NAME', 'defaultdb'),
+        'USER': os.environ.get('DB_USER', 'avnadmin'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'AVNS_swNH8lITHgvFjg-tf5M'),
+        'HOST': os.environ.get('DB_HOST', 'daar2025-luluantoinex-745c.b.aivencloud.com'),
+        'PORT': os.environ.get('DB_PORT', '25492'),
     }
 }

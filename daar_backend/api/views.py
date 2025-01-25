@@ -2,11 +2,11 @@
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-from .services.mongo_client import mongo_client
 import re
-from bson import ObjectId
 import logging
 from django.db import connection
+from api.algorithms.kmp import kmp_search
+from api.algorithms.automate import search_regex, minimize_dfa, ndfa_to_dfa, to_ndfa, parse
 
 # Configuration du logger
 logger = logging.getLogger('api')  # Assurez-vous que le nom correspond à votre configuration de logging
@@ -266,21 +266,37 @@ def search_books(request):
         if len(query) > 100:
             return JsonResponse({"error": "La requête est trop longue"}, status=400)
 
+        # request body
+        limit = int(request.GET.get('limit', 10)) # limite de livre 
+        offset = int(request.GET.get('offset', 0)) # l'offset pour les pages
+        sort_by = request.GET.get('sort', '') # criètre de tri
+
         # Requête pour rechercher par pertinence (utilise un index textuel)
         sql_query = """
-        SELECT *,
-            ts_rank_cd(search_content, plainto_tsquery('english', %s)) AS rank
+        SELECT id, title, text_content,
+            ts_rank_cd(search_content, plainto_tsquery('english', %s)) AS rank, centrality
         FROM books
         WHERE search_content @@ plainto_tsquery('english', %s)
-        ORDER BY rank DESC, centrality DESC
-        LIMIT 100;
         """
         results = execute_sql_query(sql_query, [query, query])
         
+        for book in results:
+            text = book.get('text_content', '')
+            occurrences = len(re.findall(re.escape(query), text, re.IGNORECASE))
+            book['total_occurrences'] = occurrences
+
+        if sort_by == 'centrality':
+            results.sort(key=lambda b: (-b['rank'], -b['centrality'])) # Tri par centralité
+            
+        else:
+            results.sort(key=lambda b: -b['total_occurrences'])  # Tri par fréquence décroissante 
+
         # Générer des suggestions basées sur les voisins du graphe
         suggestions = get_suggestions(results)
+        
 
-        return JsonResponse({"results": results, "suggestions": suggestions}, status=200)
+        page_result = results[offset:offset+limit]
+        return JsonResponse({"results": page_result, "suggestions": suggestions}, status=200)
     except Exception as e:
         logger.error(f"Erreur lors de la recherche de livres avec query='{query}': {e}")
         return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
@@ -293,7 +309,7 @@ def advanced_search_books(request):
     try:
         # Récupérer les paramètres
         regex_pattern = request.GET.get('regex', '').strip()
-        limit = int(request.GET.get('limit', 100))
+        limit = int(request.GET.get('limit', 10))
         offset = int(request.GET.get('offset', 0))
 
         if not regex_pattern:
@@ -313,14 +329,15 @@ def advanced_search_books(request):
         SELECT *
         FROM books
         WHERE title ~* %s OR authors::TEXT ~* %s OR text_content ~* %s
-        LIMIT %s OFFSET %s;
         """
         results = execute_sql_query(sql_query, [regex_pattern, regex_pattern, regex_pattern, limit, offset])
         
         # Générer des suggestions basées sur les voisins
         suggestions = get_suggestions(results)
 
-        return JsonResponse({"results": results, "suggestions": suggestions}, status=200)
+        page_result = results[offset:offset+limit]
+
+        return JsonResponse({"results": page_result, "suggestions": suggestions}, status=200)
     except Exception as e:
         logger.error(f"Erreur lors de la recherche avancée avec regex='{regex_pattern}': {e}")
         return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
@@ -345,6 +362,7 @@ def get_suggestions(top_results, max_suggestions=10):
             FROM books
             WHERE id = ANY(%s)
         )
+        ORDER BY centrality DESC
         LIMIT %s;
         """
         suggestions = execute_sql_query(sql_query, [top_ids, max_suggestions])
@@ -353,3 +371,118 @@ def get_suggestions(top_results, max_suggestions=10):
     except Exception as e:
         logger.error(f"Erreur lors de la génération des suggestions: {e}")
         return []
+
+# Implém algo
+
+@require_GET
+def kmp_search_books(request):
+    """
+    Recherche KMP
+    """
+    try:
+        pattern = request.GET.get('pattern', '').strip()
+        if not pattern:
+            return JsonResponse({"error": "Aucun pattern fourni."}, status=400)
+        
+        # s'il y a une limite en parametre
+        limit = int(request.GET.get('limit', 10))
+        offset = int(request.GET.get('offset', 0))
+        sort_by = request.GET.get('sort', '')
+
+        # il y a une limite (on peut enlever)
+        sql_query = f"""
+            SELECT id, title, search_content, centrality
+            FROM books
+        """
+        books = execute_sql_query(sql_query, [pattern])
+
+        results = []
+        for book in books:
+            text = book['search_content'] or ''
+            title = book['title'] or ''
+            
+            title_matches = kmp_search(title, pattern)
+            text_matches = kmp_search(text, pattern)
+
+            occurrences_in_title = len(title_matches)
+            occurrences_in_text = len(text_matches)
+
+            # priorité pour le titre
+            if occurrences_in_title > 0 or occurrences_in_text > 0:
+                book['occurrences_in_title'] = occurrences_in_title
+                book['occurrences_in_text'] = occurrences_in_text
+                book['priority'] = 1 if occurrences_in_title > 0 else 2
+                book['total_occurrences'] = occurrences_in_title + occurrences_in_text
+                results.append(book)
+        
+        if sort_by == 'centrality':
+            results.sort(key=lambda b: -b['centrality'])
+        else:
+            results.sort(key=lambda b: (b['priority'], -b['total_occurrences']))
+
+        page_result = results[offset:offset+limit]
+
+        return JsonResponse({"results": page_result}, status=200)
+    except Exception as e:
+        logger.error(f"Erreur lors de la recherche KMP : {e}")
+        return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
+    
+
+@require_GET
+def automate_regex_search_books(request):
+    """
+    Recherche RegEx via automate DFA
+    """
+    try:
+        regex_pattern = request.GET.get('regex', '').strip()
+        if not regex_pattern:
+            return JsonResponse({"error": "Aucune expression régulière fournie."}, status=400)
+        
+        limit = int(request.GET.get('limit',10))
+        offset = int(request.GET.get('offset', 0))
+        sort_by = request.GET.get('sort', '')
+
+        syntax_tree = parse(regex_pattern)
+        nfa = to_ndfa(syntax_tree)
+        dfa = ndfa_to_dfa(nfa)
+        minimized_dfa = minimize_dfa(dfa)
+
+        sql_query = f"""
+            SELECT id, title, search_content, centrality
+            FROM books
+        """
+        books = execute_sql_query(sql_query, [regex_pattern])
+
+        results = []
+        for book in books:
+            text = book['search_content'] or ''
+            title = book['title'] or ''
+            
+            title_matches = search_regex(minimized_dfa, title)
+            text_matches = search_regex(minimized_dfa, text)
+
+            occurrences_in_title = len(title_matches)
+            occurrences_in_text = len(text_matches)
+            
+            if occurrences_in_title > 0 or occurrences_in_text > 0:
+                book['occurrences_in_title'] = occurrences_in_title
+                book['occurrences_in_text'] = occurrences_in_text
+                book['total_occurrences'] = occurrences_in_title + occurrences_in_text
+                
+                # priorité pour le titre
+                book['priority'] = 1 if occurrences_in_title > 0 else 2
+                
+                results.append(book)
+
+        if sort_by == 'centrality':
+            results.sort(key=lambda b: -b['centrality'])
+        else:
+            results.sort(key=lambda b: (b['priority'], -b['total_occurrences']))
+
+        page_result = results[offset:offset+limit]
+
+        return JsonResponse({"results": page_result}, status=200)
+
+    except Exception as e:
+        logger.error(f"Erreur lors de la recherche RegEx automate : {e}")
+        return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
