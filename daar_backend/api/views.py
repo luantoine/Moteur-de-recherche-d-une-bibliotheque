@@ -392,18 +392,33 @@ def kmp_search_books(request):
         sort_by = request.GET.get('sort', '')
 
         lps = compute_lps(pattern)
-        pattern2= f"%{pattern}%"
-        # il y a une limite (on peut enlever)
-        sql_query = f"""
-            SELECT id, title, authors, search_content, centrality
-            FROM books
-            WHERE search_content @@ to_tsquery('simple', %s)
-        """
-        books = execute_sql_query(sql_query, [pattern2])
+
+        tokens = pattern.split()
+        is_multiword = (len(tokens) > 1)
+
+        if is_multiword:
+            # trigram based
+            pattern2= f"%{pattern}%"
+            sql_query = """
+                SELECT id, title, authors, text_content, centrality, cover_url
+                FROM books
+                WHERE text_content ILIKE %s
+            """
+            books = execute_sql_query(sql_query, [pattern2])
+
+        else:
+            pattern2= f"%{pattern}%"
+            # regular 1 word search
+            sql_query = f"""
+                SELECT id, title, authors, search_content, centrality, cover_url
+                FROM books
+                WHERE search_content @@ to_tsquery('simple', %s)
+            """
+            books = execute_sql_query(sql_query, [pattern2])
 
         results = []
         for book in books:
-            text = book['search_content'] or ''
+            text = book['search_content'] or '' if not is_multiword else book['text_content'] or ''
             title = book['title'] or ''
             
             title_matches = kmp_search_pos(title, pattern, lps)
@@ -441,8 +456,8 @@ def automate_regex_search_books(request):
     Recherche RegEx via automate DFA
     """
     try:
-        regex_pattern = request.GET.get('regex', '').strip()
-        if not regex_pattern:
+        regex= request.GET.get('regex', '').strip()
+        if not regex:
             return JsonResponse({"error": "Aucune expression régulière fournie."}, status=400)
         
         limit = int(request.GET.get('limit',10))
@@ -450,22 +465,36 @@ def automate_regex_search_books(request):
         sort_by = request.GET.get('sort', '')
         
         ttime = time.time()
-        syntax_tree = parse(regex_pattern)
+        syntax_tree = parse(regex)
         nfa = to_ndfa(syntax_tree)
         dfa = ndfa_to_dfa(nfa)
         minimized_dfa = minimize_dfa(dfa)
 
-        regex_pattern = f"{regex_pattern}:*"
-        sql_query = f"""
-            SELECT id, title, authors, search_content, centrality
-            FROM books
-            WHERE search_content @@ to_tsquery('simple', %s)
-        """
-        books = execute_sql_query(sql_query, [regex_pattern])
+        tokens = regex.split()
+        is_multiword = (len(tokens) > 1)
+
+        if is_multiword:
+            pattern2 = f"%{regex}%"
+            sql_query = """
+                SELECT id, title, authors, text_content, centrality, cover_url
+                FROM books
+                WHERE text_content ILIKE %s
+            """
+            books = execute_sql_query(sql_query, [pattern2])
+
+        else:
+
+            regex = f"{regex}:*"
+            sql_query = f"""
+                SELECT id, title, authors, search_content, centrality, cover_url
+                FROM books
+                WHERE search_content @@ to_tsquery('simple', %s)
+            """
+            books = execute_sql_query(sql_query, [regex])
 
         results = []
         for book in books:
-            text = book['search_content'] or ''
+            text = book['search_content'] or '' if not is_multiword else book['text_content'] or ''
             title = book['title'] or ''
             
             title_matches = search_regex(minimized_dfa, title)
