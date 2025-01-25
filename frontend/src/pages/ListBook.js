@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { useEffect } from "react";
 import HeadBar from "../components/HeadBar";
 import { useBookList } from "../states/ListBookState";
 import Book from "../components/Book";
@@ -32,11 +32,11 @@ const ListBook = () => {
 
             try {
                 setOnLoading(true);
-                const searchFunction =await (searchType === "advanced" ? advancedSearch(query) : simpleSearch(query));
-                const results = await searchFunction(query);
-                setListBook(results);
+                const searchFunction = await (searchType === "advanced" ? advancedSearch(query) : simpleSearch(query));
+                setListBook(searchFunction);
+                setOnLoading(false)
             } catch (error) {
-                setOnError("Une erreur est survenue lors de la recherche.");
+                setOnError("Une erreur est survenue lors de la recherche.", error.message);
             } finally {
                 setOnLoading(false);
             }
@@ -44,7 +44,6 @@ const ListBook = () => {
 
         searchWord();
     }, [query, searchType]);
-
 
 
     if (onLoading) {

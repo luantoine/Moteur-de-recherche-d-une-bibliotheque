@@ -5,7 +5,7 @@ import HeadBar from "../components/HeadBar";
 const AboutUs = () => {
     return (
         <div className="min-h-screen bg-gray-100 p-8">
-            <HeadBar/>w
+            <HeadBar/>
             <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6">
                 <h1 className="text-3xl font-bold text-gray-800 mb-4">À propos de nous</h1>
 
@@ -21,9 +21,9 @@ const AboutUs = () => {
                 <section className="mb-6">
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">L'équipe</h2>
                     <ul className="list-disc pl-5 text-gray-600">
-                        <li><strong>Nom 1</strong> : Responsable de l'architecture backend et des algorithmes de recherche. Passionné par l'optimisation des performances des moteurs de recherche.</li>
-                        <li><strong>Nom 2</strong> : Chargé de l'interface utilisateur et de l'expérience client. Conçoit des interfaces élégantes et accessibles.</li>
-                        <li><strong>Nom 3</strong> : Spécialiste des bases de données et de la gestion des graphes, notamment dans la mise en œuvre des graphes de Jaccard.</li>
+                        <li><strong>Andre VICENTE</strong> : Responsable de l'architecture backend et des algorithmes de recherche. Passionné par l'optimisation des performances des moteurs de recherche.</li>
+                        <li><strong>Arnaud UTHAYAKUMAR</strong> : Chargé de l'interface utilisateur et de l'expérience client. Conçoit des interfaces élégantes et accessibles.</li>
+                        <li><strong>Antoine LUONG</strong> : Spécialiste des bases de données et de la gestion des graphes, notamment dans la mise en œuvre des graphes de Jaccard.</li>
                     </ul>
                 </section>
 
