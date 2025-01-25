@@ -10,7 +10,7 @@ urlpatterns = [
     path('book/<str:book_id>/', get_book, name='get_book'),
     path('search/', search_books, name='search_books'), 
     path('advanced_search/', advanced_search_books, name='advanced_search_books'),
-    path('kmp-search-books/', kmp_search_books, name='kmp_search_books'),
-    path('automate-regex-search/', automate_regex_search_books, name='automate_regex_search'),
+    path('search/kmp/', kmp_search_books, name='kmp_search_books'),
+    path('search/automate/', automate_regex_search_books, name='automate_regex_search'),
     path('get-books-centrality/', get_books_by_centrality, name='get_books_centrality'),
 ]
