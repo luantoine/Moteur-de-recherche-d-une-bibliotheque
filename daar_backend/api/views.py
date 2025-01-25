@@ -5,7 +5,7 @@ from django.views.decorators.http import require_GET
 import re
 import logging
 from django.db import connection
-from api.algorithms.kmp import kmp_search
+from api.algorithms.kmp import compute_lps, kmp_search_pos
 from api.algorithms.automate import search_regex, minimize_dfa, ndfa_to_dfa, to_ndfa, parse
 
 # Configuration du logger
@@ -373,7 +373,6 @@ def get_suggestions(top_results, max_suggestions=10):
         return []
 
 # Implém algo
-import time
 
 @require_GET
 def kmp_search_books(request):
@@ -381,7 +380,6 @@ def kmp_search_books(request):
     Recherche KMP
     """
     try:
-        start_time = time.time()
         pattern = request.GET.get('pattern', '').strip()
         if not pattern:
             return JsonResponse({"error": "Aucun pattern fourni."}, status=400)
@@ -391,25 +389,21 @@ def kmp_search_books(request):
         offset = int(request.GET.get('offset', 0))
         sort_by = request.GET.get('sort', '')
 
-        query_start_time = time.time()
+        lps = compute_lps(pattern)
         # il y a une limite (on peut enlever)
         sql_query = f"""
-            SELECT id, title, search_content, centrality
+            SELECT id, title, authors, search_content, centrality
             FROM books
         """
-        books = execute_sql_query(sql_query, [pattern])
+        books = execute_sql_query(sql_query)
 
-        query_end_time = time.time()
-        logger.info(f"Requête SQL exécutée en {query_end_time - query_start_time:.4f} secondes")
-
-        process_start_time = time.time()
         results = []
         for book in books:
             text = book['search_content'] or ''
             title = book['title'] or ''
             
-            title_matches = kmp_search(title, pattern)
-            text_matches = kmp_search(text, pattern)
+            title_matches = kmp_search_pos(title, pattern, lps)
+            text_matches = kmp_search_pos(text, pattern, lps)
 
             occurrences_in_title = len(title_matches)
             occurrences_in_text = len(text_matches)
@@ -421,30 +415,21 @@ def kmp_search_books(request):
                 book['priority'] = 1 if occurrences_in_title > 0 else 2
                 book['total_occurrences'] = occurrences_in_title + occurrences_in_text
                 results.append(book)
-        
-        process_end_time = time.time()
-        logger.info(f"Traitement des résultats KMP terminé en {process_end_time - process_start_time:.4f} secondes")
-
-        sort_start_time = time.time()
 
 
         if sort_by == 'centrality':
             results.sort(key=lambda b: -b['centrality'])
         else:
             results.sort(key=lambda b: (b['priority'], -b['total_occurrences']))
-        sort_end_time = time.time()
-        logger.info(f"Tri des résultats exécuté en {sort_end_time - sort_start_time:.4f} secondes")
 
         page_result = results[offset:offset+limit]
-        total_time = time.time() - start_time
-        logger.info(f"Recherche KMP terminée en {total_time:.4f} secondes")
 
         return JsonResponse({"results": page_result}, status=200)
     except Exception as e:
         logger.error(f"Erreur lors de la recherche KMP : {e}")
         return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
     
-
+import time
 @require_GET
 def automate_regex_search_books(request):
     """
@@ -458,14 +443,15 @@ def automate_regex_search_books(request):
         limit = int(request.GET.get('limit',10))
         offset = int(request.GET.get('offset', 0))
         sort_by = request.GET.get('sort', '')
-
+        
+        ttime = time.time()
         syntax_tree = parse(regex_pattern)
         nfa = to_ndfa(syntax_tree)
         dfa = ndfa_to_dfa(nfa)
         minimized_dfa = minimize_dfa(dfa)
 
         sql_query = f"""
-            SELECT id, title, search_content, centrality
+            SELECT id, title, authors, search_content, centrality
             FROM books
         """
         books = execute_sql_query(sql_query, [regex_pattern])
@@ -497,9 +483,35 @@ def automate_regex_search_books(request):
             results.sort(key=lambda b: (b['priority'], -b['total_occurrences']))
 
         page_result = results[offset:offset+limit]
+        endtime= time.time() - ttime
 
+        print(f"Temps d'exécution : {endtime} secondes")
         return JsonResponse({"results": page_result}, status=200)
 
     except Exception as e:
         logger.error(f"Erreur lors de la recherche RegEx automate : {e}")
+        return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
+
+@require_GET
+def get_books_by_centrality(request):
+    """
+    Récupère la liste de tous les livres triés par centralité,
+    avec limit/offset pour les pages
+    """
+    try:
+        limit = int(request.GET.get('limit', 10))
+        offset = int(request.GET.get('offset', 0))
+
+        sql_query = f"""
+            SELECT id, title, authors, search_content, centrality
+            FROM books
+            ORDER BY centrality DESC
+            LIMIT %s
+            OFFSET %s
+        """
+        books = execute_sql_query(sql_query, [limit, offset])
+
+        return JsonResponse({"results": books}, status=200)
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des livres : {e}")
         return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)

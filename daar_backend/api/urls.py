@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import get_book, search_books,advanced_search_books, kmp_search_books, automate_regex_search_books
+from .views import get_book, search_books,advanced_search_books, kmp_search_books, automate_regex_search_books, get_books_by_centrality
 from django.http import JsonResponse
 
 def test_route(request):
@@ -12,4 +12,5 @@ urlpatterns = [
     path('advanced_search/', advanced_search_books, name='advanced_search_books'),
     path('kmp-search-books/', kmp_search_books, name='kmp_search_books'),
     path('automate-regex-search/', automate_regex_search_books, name='automate_regex_search'),
+    path('get-books-centrality/', get_books_by_centrality, name='get_books_centrality'),
 ]
