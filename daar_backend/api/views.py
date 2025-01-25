@@ -281,7 +281,7 @@ def search_books(request):
         results = execute_sql_query(sql_query, [query, query])
         
         for book in results:
-            text = book.get('text_content', '')
+            text = book.get('text_content', '') or ""
             occurrences = len(re.findall(re.escape(query), text, re.IGNORECASE))
             book['total_occurrences'] = occurrences
 
@@ -330,7 +330,7 @@ def advanced_search_books(request):
         FROM books
         WHERE title ~* %s OR authors::TEXT ~* %s OR text_content ~* %s
         """
-        results = execute_sql_query(sql_query, [regex_pattern, regex_pattern, regex_pattern, limit, offset])
+        results = execute_sql_query(sql_query, [regex_pattern, regex_pattern, regex_pattern])
         
         # Générer des suggestions basées sur les voisins
         suggestions = get_suggestions(results)
@@ -373,6 +373,7 @@ def get_suggestions(top_results, max_suggestions=10):
         return []
 
 # Implém algo
+import time
 
 @require_GET
 def kmp_search_books(request):
@@ -380,6 +381,7 @@ def kmp_search_books(request):
     Recherche KMP
     """
     try:
+        start_time = time.time()
         pattern = request.GET.get('pattern', '').strip()
         if not pattern:
             return JsonResponse({"error": "Aucun pattern fourni."}, status=400)
@@ -389,6 +391,7 @@ def kmp_search_books(request):
         offset = int(request.GET.get('offset', 0))
         sort_by = request.GET.get('sort', '')
 
+        query_start_time = time.time()
         # il y a une limite (on peut enlever)
         sql_query = f"""
             SELECT id, title, search_content, centrality
@@ -396,6 +399,10 @@ def kmp_search_books(request):
         """
         books = execute_sql_query(sql_query, [pattern])
 
+        query_end_time = time.time()
+        logger.info(f"Requête SQL exécutée en {query_end_time - query_start_time:.4f} secondes")
+
+        process_start_time = time.time()
         results = []
         for book in books:
             text = book['search_content'] or ''
@@ -415,12 +422,22 @@ def kmp_search_books(request):
                 book['total_occurrences'] = occurrences_in_title + occurrences_in_text
                 results.append(book)
         
+        process_end_time = time.time()
+        logger.info(f"Traitement des résultats KMP terminé en {process_end_time - process_start_time:.4f} secondes")
+
+        sort_start_time = time.time()
+
+
         if sort_by == 'centrality':
             results.sort(key=lambda b: -b['centrality'])
         else:
             results.sort(key=lambda b: (b['priority'], -b['total_occurrences']))
+        sort_end_time = time.time()
+        logger.info(f"Tri des résultats exécuté en {sort_end_time - sort_start_time:.4f} secondes")
 
         page_result = results[offset:offset+limit]
+        total_time = time.time() - start_time
+        logger.info(f"Recherche KMP terminée en {total_time:.4f} secondes")
 
         return JsonResponse({"results": page_result}, status=200)
     except Exception as e:
