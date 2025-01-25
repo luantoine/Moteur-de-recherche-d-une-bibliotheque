@@ -1,54 +1,47 @@
-import React, { useEffect } from 'react';
+import React, {Suspense, useEffect} from "react";
 import HeadBar from "../components/HeadBar";
 import { useBookList } from "../states/ListBookState";
 import Book from "../components/Book";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
 import { useLocation } from "react-router-dom";
-import {ADVANCED_SEARCH_API, SIMPLE_SEARCH_API} from "../config/api";
+import { ADVANCED_SEARCH_API, SIMPLE_SEARCH_API } from "../config/api";
 
 const ListBook = () => {
-    const { listBook, onLoading, onError, setListBook, setOnLoading, setOnError } = useBookList()
+    const { listBook, setListBook, onLoading, setOnLoading, onError, setOnError } = useBookList();
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const query = queryParams.get("query");
-    const searchType = queryParams.get("type")
+    const searchType = queryParams.get("type");
 
     useEffect(() => {
         const searchWord = async () => {
-            if (!query) return; // Pas de recherche sans mot-clé
+            if (!query) {
+                setOnError("Veuillez saisir un mot-clé pour rechercher.");
+                return;
+            }
             setOnLoading(true);
+            setOnError(null);
+
             try {
-                let uri = "";
-                searchType === "advanced" ?
-                    uri = ADVANCED_SEARCH_API:
-                    uri = SIMPLE_SEARCH_API
-                const response = await fetch(uri)
+                const uri = searchType === "advanced" ? ADVANCED_SEARCH_API : SIMPLE_SEARCH_API;
+                const response = await fetch(`${uri}?query=${encodeURIComponent(query)}`);
                 const data = await response.json();
-                setOnLoading(false);
+<Suspense></Suspense>
                 if (!response.ok) {
-                    setOnError(data.message || "Erreur lors de la recherche.");
-                } else {
-                    setListBook(data);
-                    setOnError(null);
+                    throw new Error(data.message || "Erreur lors de la recherche.");
                 }
+
+                setListBook(data);
             } catch (error) {
+                setOnError(`Une erreur a été constatée : ${error.message}`);
+            } finally {
                 setOnLoading(false);
-                setOnError(`Une erreur a été constatée : ${error.message || "Erreur inconnue"}`);
             }
         };
+
         searchWord();
-    }, [query, searchType]);
-
-    if (!query) {
-        setOnLoading(false)
-        setOnError("Veuillez saisir un mot-clé pour rechercher." )
-    }
-
-    if (!listBook || !listBook.results || listBook.results.length === 0) {
-        setOnLoading(false)
-        setOnError("Aucun livre trouvé")
-    }
+    }, [query, searchType, setListBook, setOnLoading, setOnError]);
 
     if (onLoading) {
         return (
@@ -63,7 +56,16 @@ const ListBook = () => {
         return (
             <div>
                 <HeadBar />
-                <Error />
+                <Error message={onError} />
+            </div>
+        );
+    }
+
+    if (!listBook || !listBook.results || listBook.results.length === 0) {
+        return (
+            <div>
+                <HeadBar />
+                <p>Aucun livre trouvé.</p>
             </div>
         );
     }
