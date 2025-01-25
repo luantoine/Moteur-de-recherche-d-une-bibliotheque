@@ -7,6 +7,7 @@ import logging
 from django.db import connection
 from api.algorithms.kmp import compute_lps, kmp_search_pos
 from api.algorithms.automate import search_regex, minimize_dfa, ndfa_to_dfa, to_ndfa, parse
+from django.views.decorators.cache import cache_page
 
 # Configuration du logger
 logger = logging.getLogger('api')  # Assurez-vous que le nom correspond à votre configuration de logging
@@ -374,6 +375,7 @@ def get_suggestions(top_results, max_suggestions=10):
 
 # Implém algo
 
+@cache_page(60 * 5)
 @require_GET
 def kmp_search_books(request):
     """
@@ -390,12 +392,14 @@ def kmp_search_books(request):
         sort_by = request.GET.get('sort', '')
 
         lps = compute_lps(pattern)
+        pattern2= f"%{pattern}%"
         # il y a une limite (on peut enlever)
         sql_query = f"""
             SELECT id, title, authors, search_content, centrality
             FROM books
+            WHERE search_content @@ to_tsquery('simple', %s)
         """
-        books = execute_sql_query(sql_query)
+        books = execute_sql_query(sql_query, [pattern2])
 
         results = []
         for book in books:
@@ -430,6 +434,7 @@ def kmp_search_books(request):
         return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
     
 import time
+@cache_page(60 * 5)
 @require_GET
 def automate_regex_search_books(request):
     """
@@ -450,9 +455,11 @@ def automate_regex_search_books(request):
         dfa = ndfa_to_dfa(nfa)
         minimized_dfa = minimize_dfa(dfa)
 
+        regex_pattern = f"{regex_pattern}:*"
         sql_query = f"""
             SELECT id, title, authors, search_content, centrality
             FROM books
+            WHERE search_content @@ to_tsquery('simple', %s)
         """
         books = execute_sql_query(sql_query, [regex_pattern])
 
