@@ -1,14 +1,23 @@
-import React, {Suspense, useEffect} from "react";
+import React, { Suspense, useEffect } from "react";
 import HeadBar from "../components/HeadBar";
 import { useBookList } from "../states/ListBookState";
 import Book from "../components/Book";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
 import { useLocation } from "react-router-dom";
-import { ADVANCED_SEARCH_API, SIMPLE_SEARCH_API } from "../config/api";
+import advancedSearch from "../config/advancedSearch";
+import simpleSearch from "../config/simpleSearch";
 
 const ListBook = () => {
-    const { listBook, setListBook, onLoading, setOnLoading, onError, setOnError } = useBookList();
+    const {
+        listBook,
+        setListBook,
+        onLoading,
+        setOnLoading,
+        onError,
+        setOnError
+    } = useBookList();
+
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const query = queryParams.get("query");
@@ -20,27 +29,23 @@ const ListBook = () => {
                 setOnError("Veuillez saisir un mot-clé pour rechercher.");
                 return;
             }
-            setOnLoading(true);
-            setOnError(null);
 
             try {
-                const uri = searchType === "advanced" ? ADVANCED_SEARCH_API : SIMPLE_SEARCH_API;
-                const response = await fetch(`${uri}?query=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || "Erreur lors de la recherche.");
-                }
-
-                setListBook(data);
+                setOnLoading(true);
+                const searchFunction =await (searchType === "advanced" ? advancedSearch(query) : simpleSearch(query));
+                const results = await searchFunction(query);
+                setListBook(results);
             } catch (error) {
-                setOnError(`Une erreur a été constatée : ${error.message}`);
+                setOnError("Une erreur est survenue lors de la recherche.");
             } finally {
                 setOnLoading(false);
             }
         };
 
         searchWord();
-    }, [query, searchType, setListBook, setOnLoading, setOnError]);
+    }, [query, searchType]);
+
+
 
     if (onLoading) {
         return (

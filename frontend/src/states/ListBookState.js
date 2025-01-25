@@ -1,10 +1,9 @@
 import { createContext, useContext, useState } from 'react';
-import Suggestion from "../components/Suggestion";
-
+import getBestBook from "../config/getBestBook";
 const ListBookContext = createContext();
 
 export const ListBookProvider = ({ children }) => {
-    const [listBook, setListBook] = useState(Suggestion());
+    const [listBook, setListBook] = useState(getBestBook());
     const [onLoading, setOnLoading] = useState(false);
     const [onError, setOnError ] = useState(null)
 

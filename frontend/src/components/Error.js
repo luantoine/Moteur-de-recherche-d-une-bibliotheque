@@ -1,14 +1,11 @@
 import React from 'react';
-import {useBookList} from "../states/ListBookState";
 
-const Error = () => {
-
-    const { onError } = useBookList();
+const Error = (message) => {
 
     return (
         <div className={"container"}>
            <h1>
-               {onError}
+               {message}
            </h1>
         </div>
     );
