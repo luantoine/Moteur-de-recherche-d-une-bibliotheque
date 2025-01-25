@@ -62,6 +62,31 @@ def kmp_search_avec_lps(text, pattern, lps):
                 i += 1
     return False  # Si le pattern n'a pas été trouvé
 
+def kmp_search_pos(text: str, pattern: str, lps: list):
+    """
+    Retourne **la liste complète des positions** où 'pattern' apparaît dans 'text',
+    grâce à l'algorithme KMP, en réutilisant le tableau 'lps'.
+    """
+    positions = []
+    i, j = 0, 0  # i pour text, j pour pattern
+    n, m = len(text), len(pattern)
+
+    while i < n:
+        if text[i] == pattern[j]:
+            i += 1
+            j += 1
+            # Pattern trouvé
+            if j == m:
+                positions.append(i - j)
+                j = lps[j - 1]
+        else:
+            if j != 0:
+                j = lps[j - 1]
+            else:
+                i += 1
+
+    return positions
+
 def main():
     pattern = "abc"
     text = "ababcabcababc"
