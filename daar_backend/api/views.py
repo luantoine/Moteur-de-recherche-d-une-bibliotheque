@@ -418,7 +418,7 @@ def kmp_search_books(request):
 
         results = []
         for book in books:
-            text = book['search_content'] or '' if not is_multiword else book['text_content'] or ''
+            text = book.pop('search_content', '') if not is_multiword else book.pop('text_content','')
             title = book['title'] or ''
             
             title_matches = kmp_search_pos(title, pattern, lps)
@@ -494,7 +494,7 @@ def automate_regex_search_books(request):
 
         results = []
         for book in books:
-            text = book['search_content'] or '' if not is_multiword else book['text_content'] or ''
+            text = book.pop('search_content', '') if not is_multiword else book.pop('text_content','')
             title = book['title'] or ''
             
             title_matches = search_regex(minimized_dfa, title)
