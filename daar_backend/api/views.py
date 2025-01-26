@@ -391,48 +391,51 @@ def kmp_search_books(request):
         offset = int(request.GET.get('offset', 0))
         sort_by = request.GET.get('sort', '')
 
-        lps = compute_lps(pattern)
-
+        
+        books= []
         tokens = pattern.split()
-        is_multiword = (len(tokens) > 1)
 
-        if is_multiword:
-            # trigram based
-            pattern2= f"%{pattern}%"
+        # pour chaque mot on fusionne les resultats de chaque requete pour un mot
+        for token in tokens:
+            pattern2 = f"%{token}%"
             sql_query = """
-                SELECT id, title, authors, text_content, centrality, cover_url
-                FROM books
-                WHERE text_content ILIKE %s
-            """
-            books = execute_sql_query(sql_query, [pattern2])
-
-        else:
-            pattern2= f"%{pattern}%"
-            # regular 1 word search
-            sql_query = f"""
                 SELECT id, title, authors, search_content, centrality, cover_url
                 FROM books
                 WHERE search_content @@ to_tsquery('simple', %s)
             """
-            books = execute_sql_query(sql_query, [pattern2])
+            token_books = execute_sql_query(sql_query, [pattern2])
+            books.extend(token_books)
 
+        lps_map = {token: compute_lps(token) for token in tokens}
+
+        books = {book['id']: book for book in books}.values() # éliminer les doublons
         results = []
         for book in books:
-            text = book.pop('search_content', '') if not is_multiword else book.pop('text_content','')
+            text = book.pop('search_content', '')
             title = book['title'] or ''
+            authors = book['authors'] or ''
             
-            title_matches = kmp_search_pos(title, pattern, lps)
-            text_matches = kmp_search_pos(text, pattern, lps)
+            occurrences_in_title = 0
+            occurrences_in_text = 0
+            occurences_in_authors= 0
 
-            occurrences_in_title = len(title_matches)
-            occurrences_in_text = len(text_matches)
+            for pattern3, lps in lps_map.items():
+                
+                title_matches = kmp_search_pos(title, pattern3, lps)
+                text_matches = kmp_search_pos(text, pattern3, lps)
+                authors_matches = kmp_search_pos(authors, pattern3, lps)
+
+                occurrences_in_title += len(title_matches)
+                occurrences_in_text += len(text_matches)
+                occurences_in_authors += len(authors_matches)
 
             # priorité pour le titre
-            if occurrences_in_title > 0 or occurrences_in_text > 0:
+            if occurrences_in_title > 0 or occurrences_in_text > 0 or occurences_in_authors > 0:
                 book['occurrences_in_title'] = occurrences_in_title
                 book['occurrences_in_text'] = occurrences_in_text
-                book['priority'] = 1 if occurrences_in_title > 0 else 2
-                book['total_occurrences'] = occurrences_in_title + occurrences_in_text
+                book['occurrences_in_authors'] = occurences_in_authors
+                book['priority'] = 1 if occurrences_in_title > 0 else 2 if occurences_in_authors > 0 else 3
+                book['total_occurrences'] = occurrences_in_title + occurrences_in_text + occurences_in_authors
                 results.append(book)
 
 
@@ -470,46 +473,41 @@ def automate_regex_search_books(request):
         dfa = ndfa_to_dfa(nfa)
         minimized_dfa = minimize_dfa(dfa)
 
-        tokens = regex.split()
-        is_multiword = (len(tokens) > 1)
-
-        if is_multiword:
-            pattern2 = f"%{regex}%"
-            sql_query = """
-                SELECT id, title, authors, text_content, centrality, cover_url
-                FROM books
-                WHERE text_content ILIKE %s
-            """
-            books = execute_sql_query(sql_query, [pattern2])
-
-        else:
-
-            regex = f"{regex}:*"
-            sql_query = f"""
-                SELECT id, title, authors, search_content, centrality, cover_url
-                FROM books
-                WHERE search_content @@ to_tsquery('simple', %s)
-            """
-            books = execute_sql_query(sql_query, [regex])
+        regex = f"{regex}:*"
+        sql_query = f"""
+            SELECT id, title, authors, search_content, centrality, cover_url
+            FROM books
+            WHERE search_content @@ to_tsquery('simple', %s)
+        """
+        books = execute_sql_query(sql_query, [regex])
 
         results = []
         for book in books:
-            text = book.pop('search_content', '') if not is_multiword else book.pop('text_content','')
+            text = book.pop('search_content', '')
             title = book['title'] or ''
+            authors = book['authors'] or ''
             
+            occurrences_in_title = 0
+            occurrences_in_text = 0
+            occurences_in_authors= 0
+
+
             title_matches = search_regex(minimized_dfa, title)
             text_matches = search_regex(minimized_dfa, text)
+            authors_matches = search_regex(minimized_dfa, authors)
 
-            occurrences_in_title = len(title_matches)
-            occurrences_in_text = len(text_matches)
-            
-            if occurrences_in_title > 0 or occurrences_in_text > 0:
+            occurrences_in_title += len(title_matches)
+            occurrences_in_text += len(text_matches)
+            occurences_in_authors += len(authors_matches)
+
+            # priorité pour le titre
+            if occurrences_in_title > 0 or occurrences_in_text > 0 or occurences_in_authors > 0:
                 book['occurrences_in_title'] = occurrences_in_title
                 book['occurrences_in_text'] = occurrences_in_text
-                book['total_occurrences'] = occurrences_in_title + occurrences_in_text
-                
-                # priorité pour le titre
-                book['priority'] = 1 if occurrences_in_title > 0 else 2
+                book['occurrences_in_authors'] = occurences_in_authors
+                book['priority'] = 1 if occurrences_in_title > 0 else 2 if occurences_in_authors > 0 else 3
+                book['total_occurrences'] = occurrences_in_title + occurrences_in_text + occurences_in_authors
+                results.append(book)
                 
                 results.append(book)
 
@@ -539,13 +537,16 @@ def get_books_by_centrality(request):
         offset = int(request.GET.get('offset', 0))
 
         sql_query = f"""
-            SELECT id, title, authors, search_content, centrality
+            SELECT id, title, authors, search_content, centrality, cover_url
             FROM books
             ORDER BY centrality DESC
             LIMIT %s
             OFFSET %s
         """
         books = execute_sql_query(sql_query, [limit, offset])
+
+        for book in books:
+            book.pop('search_content', None)
 
         return JsonResponse({"results": books}, status=200)
     except Exception as e:
