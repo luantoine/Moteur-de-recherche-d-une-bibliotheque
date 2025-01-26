@@ -68,8 +68,8 @@ def fetch_and_store_books(limit=1664):
             cover_url = formats.get("image/jpeg", None)
 
             # Télécharger le texte pour avoir tout le texte du livre
-            text_content = text_url # on garde l'url si il y a copyright
-            if text_url and not copyright_:
+            text_content = None
+            if text_url:
                 try:
                     text_resp = requests.get(text_url)
                     if text_resp.status_code == 200:

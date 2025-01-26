@@ -10,8 +10,6 @@ env/
 Thumbs.db
 
 *.log
-*.json
-.vscode/
 
 pg_hba.conf
 postgresql.conf
