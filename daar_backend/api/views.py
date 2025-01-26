@@ -407,6 +407,7 @@ def kmp_search_books(request):
             books.extend(token_books)
 
         lps_map = {token: compute_lps(token) for token in tokens}
+        full_lps = compute_lps(pattern)
 
         books = {book['id']: book for book in books}.values() # éliminer les doublons
         results = []
@@ -418,6 +419,12 @@ def kmp_search_books(request):
             occurrences_in_title = 0
             occurrences_in_text = 0
             occurences_in_authors= 0
+
+            contains_full_pattern = (
+                len(kmp_search_pos(title, pattern, full_lps)) > 0 or
+                len(kmp_search_pos(text, pattern, full_lps)) > 0 or
+                len(kmp_search_pos(authors, pattern, full_lps)) > 0
+            )
 
             for pattern3, lps in lps_map.items():
                 
@@ -435,6 +442,7 @@ def kmp_search_books(request):
                 book['occurrences_in_title'] = occurrences_in_title
                 book['occurrences_in_text'] = occurrences_in_text
                 book['occurrences_in_authors'] = occurences_in_authors
+                book['contains_full_pattern'] = contains_full_pattern
                 book['priority'] = 1 if occurrences_in_title > 0 else 2 if occurences_in_authors > 0 else 3
                 book['total_occurrences'] = occurrences_in_title + occurrences_in_text + occurences_in_authors
                 results.append(book)
@@ -445,6 +453,7 @@ def kmp_search_books(request):
         else:
             results.sort(
                 key=lambda b: (
+                    not b['contains_full_pattern'], # Priorité pour le pattern complet
                     b['priority'],                  # Priorité par titre > auteurs > texte
                     -b['occurrences_in_title'],     # Tri par occurrences dans le titre
                     -b['total_occurrences']         # Tri par nombre total d'occurrences
@@ -518,7 +527,7 @@ def automate_regex_search_books(request):
         if sort_by == 'centrality':
             results.sort(key=lambda b: -b['centrality'])
         else:
-            results.sort(key=lambda b: (b['priority'], -b['occurences_in_authors'], -b['total_occurrences']))
+            results.sort(key=lambda b: (b['priority'], -b['occurences_in_title'], -b['total_occurrences']))
 
         page_result = results[offset:offset+limit]
         endtime= time.time() - ttime
