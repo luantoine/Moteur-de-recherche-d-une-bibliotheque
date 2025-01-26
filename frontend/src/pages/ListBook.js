@@ -22,6 +22,8 @@ const ListBook = () => {
     const queryParams = new URLSearchParams(location.search);
     const query = queryParams.get("query");
     const searchType = queryParams.get("type");
+    const LIMIT = 10;
+    const offset = queryParams.get("offset");
 
     useEffect(() => {
         const searchWord = async () => {
@@ -29,12 +31,10 @@ const ListBook = () => {
                 setOnError("Veuillez saisir un mot-clé pour rechercher.");
                 return;
             }
-
             try {
                 setOnLoading(true);
-                const searchFunction = await (searchType === "advanced" ? advancedSearch(query) : simpleSearch(query));
+                const searchFunction = await (searchType === "advanced" ? advancedSearch(query, LIMIT, offset) : simpleSearch(query, LIMIT, offset));
                 setListBook(searchFunction);
-                setOnLoading(false)
             } catch (error) {
                 setOnError("Une erreur est survenue lors de la recherche.", error.message);
             } finally {
@@ -44,7 +44,6 @@ const ListBook = () => {
 
         searchWord();
     }, [query, searchType]);
-
 
     if (onLoading) {
         return (

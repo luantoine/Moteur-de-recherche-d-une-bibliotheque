@@ -24,7 +24,7 @@ const SearchBar = () => {
 
     function searchOnclick(query) {
         if (query.trim() !== "") {
-            navigate(`/books?query=${encodeURIComponent(query)}&type=${encodeURIComponent(searchType)}`);
+            navigate(`/books?query=${encodeURIComponent(query)}&limit=10&offset=0&type=${encodeURIComponent(searchType)}`);
         } else {
             alert("Veuillez entrer une recherche.");
         }
