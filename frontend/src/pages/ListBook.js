@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, {useEffect, useState} from "react";
 import HeadBar from "../components/HeadBar";
 import { useBookList } from "../states/ListBookState";
 import Book from "../components/Book";
@@ -13,11 +13,10 @@ const ListBook = () => {
         listBook,
         setListBook,
         onLoading,
-        setOnLoading,
-        onError,
-        setOnError
+        setOnLoading
     } = useBookList();
 
+    const {onError, setOnError} = useState(null)
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const query = queryParams.get("query");
@@ -41,34 +40,24 @@ const ListBook = () => {
                 setOnLoading(false);
             }
         };
-
         searchWord();
     }, [query, searchType]);
 
     if (onLoading) {
         return (
-            <div>
-                <HeadBar />
-                <Loading />
-            </div>
+            <Loading />
         );
     }
 
     if (onError) {
         return (
-            <div>
-                <HeadBar />
-                <Error message={onError} />
-            </div>
+            <Error message={onError} />
         );
     }
 
     if (!listBook || !listBook.results || listBook.results.length === 0) {
         return (
-            <div>
-                <HeadBar />
-                <p>Aucun livre trouvé.</p>
-            </div>
+            <Error message={"La liste de livre n'existe pas!"} />
         );
     }
 

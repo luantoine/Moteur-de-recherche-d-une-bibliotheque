@@ -5,6 +5,7 @@ import BookInfo from "./pages/BookInfo";
 import ListBook from "./pages/ListBook";
 import {ListBookProvider} from "./states/ListBookState";
 import About from "./pages/About";
+import Home from "./pages/Home";
 
 function App() {
 
@@ -12,7 +13,7 @@ function App() {
         <ListBookProvider>
             <Router>
                 <Routes>
-                    <Route path="/" element={<ListBook/>}/>
+                    <Route path="/" element={<Home/>}/>
                     <Route path="/books" element={<ListBook />} />
                     <Route path="/book" element={<BookInfo />} />
                     <Route path="/about" element={<About />} />

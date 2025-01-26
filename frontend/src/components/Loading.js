@@ -1,8 +1,10 @@
 import React from 'react';
+import HeadBar from "./HeadBar";
 
 const Loading = () => {
     return (
-        <div className={"container"}>
+        <div >
+            <HeadBar/>
             <h1>Chargement des livres...</h1>
         </div>
     );

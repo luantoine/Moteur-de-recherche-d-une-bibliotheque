@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Historique = () => {
+const Text = () => {
     return (
         <div>
             
@@ -8,4 +8,4 @@ const Historique = () => {
     );
 };
 
-export default Historique;
+export default Text;

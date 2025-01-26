@@ -5,10 +5,9 @@ const ListBookContext = createContext();
 export const ListBookProvider = ({ children }) => {
     const [listBook, setListBook] = useState(getBestBook());
     const [onLoading, setOnLoading] = useState(false);
-    const [onError, setOnError ] = useState(null)
 
     return (
-        <ListBookContext.Provider value={{ listBook, setListBook, onLoading, setOnLoading, onError, setOnError  }}>
+        <ListBookContext.Provider value={{ listBook, setListBook, onLoading, setOnLoading}}>
             {children}
         </ListBookContext.Provider>
     );
