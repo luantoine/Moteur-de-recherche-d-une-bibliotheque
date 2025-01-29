@@ -4,10 +4,12 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 import re
 import logging
+import json
 from django.db import connection
 from api.algorithms.kmp import compute_lps, kmp_search_pos
 from api.algorithms.automate import search_regex, minimize_dfa, ndfa_to_dfa, to_ndfa, parse
 from django.views.decorators.cache import cache_page
+from collections import defaultdict
 
 # Configuration du logger
 logger = logging.getLogger('api')  # Assurez-vous que le nom correspond à votre configuration de logging
@@ -556,3 +558,131 @@ def get_books_by_centrality(request):
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des livres : {e}")
         return JsonResponse({"error": f"Erreur interne du serveur : {str(e)}"}, status=500)
+
+
+def is_regex(pattern):
+    special_chars = {'.', '*', '+', '?', '|', '[', ']', '(', ')', '{', '}', '\\', '^', '$'}
+    return any(char in special_chars for char in pattern)
+
+
+@cache_page(60 * 5)
+@require_GET
+def search(request):
+    """
+    Recherche par mot clé ou Regex
+    Utilise KMP si mot clé ou automate DFA si Regex
+    """
+    pattern = request.GET.get('pattern', '').strip()
+    if not pattern:
+        return JsonResponse({"error": "Aucun pattern fourni."}, status=400)
+
+    limit = int(request.GET.get('limit', 10))
+    offset = int(request.GET.get('offset', 0))
+    sort_by = request.GET.get('sort', '')
+
+    book_scores = defaultdict(int)
+
+    # requete dans la table d'indexage
+    if is_regex(pattern):
+        sql_indexage = "SELECT term, books_info FROM indexage"
+        index_rows = execute_sql_query(sql_indexage)
+    else:
+        tokens = pattern.split()
+        like_patterns = [f"{token}%" for token in tokens]
+        sql_indexage = """
+            SELECT term, books_info
+              FROM indexage
+             WHERE term ILIKE ANY(%s)
+        """
+        index_rows = execute_sql_query(sql_indexage, [like_patterns])
+
+    # prétraitement
+    if is_regex(pattern):
+        syntax_tree = parse(pattern)
+        nfa = to_ndfa(syntax_tree)
+        dfa = ndfa_to_dfa(nfa)
+        minimized_dfa = minimize_dfa(dfa)
+
+        def term_matches(t):
+            matches = search_regex(minimized_dfa, t.lower())
+            return len(matches) > 0
+    else:
+        lps_map = {token: compute_lps(token) for token in tokens}
+
+        def term_matches(t):
+            t=t.lower()
+            for token, lps in lps_map.items():
+                if kmp_search_pos(t, token, lps):
+                    return True
+            return False
+
+    # parcourir les résultats de l'indexage puis recherche dans la table des livres
+    for row in index_rows:
+        db_term = row["term"].lower()
+        books_info = row["books_info"]
+        if isinstance(books_info, str):
+            books_info = json.loads(books_info)
+
+        if term_matches(db_term):
+            for item in books_info:
+                b_id = item["book_id"]
+                freq = item["freq"]
+                book_scores[b_id] += freq
+
+    if not book_scores:
+        return JsonResponse({"results": []}, status=200)
+
+    book_ids = list(book_scores.keys())
+    sql_books = """
+        SELECT id, title, authors, cover_url, centrality
+          FROM books
+         WHERE id = ANY(%s)
+    """
+    books_rows = execute_sql_query(sql_books, [book_ids])
+
+    results = []
+    for row in books_rows:
+        b_id = row["id"]
+        title = row["title"] or ""
+        authors = row["authors"] or ""
+        cover_url = row.get("cover_url")
+        centrality = row.get("centrality", 0)
+        total_occ = book_scores[b_id]
+
+        priority = 3
+        if is_regex(pattern):
+            if search_regex(minimized_dfa, title):
+                priority = 1
+            elif search_regex(minimized_dfa, authors):
+                priority = 2
+        else:
+            for token in tokens:
+                lps = lps_map[token]
+                if kmp_search_pos(title.lower(), token, lps):
+                    priority = 1
+                    break
+                elif kmp_search_pos(authors.lower(), token, lps):
+                    priority = 2
+
+        results.append({
+            "id": b_id,
+            "title": title,
+            "authors": authors,
+            "cover_url": cover_url,
+            "centrality": centrality,
+            "total_occurrences": total_occ,
+            "priority": priority
+        })
+
+    if sort_by == 'centrality':
+        results.sort(key=lambda b: -b['centrality'] if b['centrality'] else 0)
+    else:
+        results.sort(
+            key=lambda b: (
+                b["priority"],
+                -b["total_occurrences"]
+            )
+        )
+
+    page_result = results[offset : offset + limit]
+    return JsonResponse({"results": page_result}, status=200)
