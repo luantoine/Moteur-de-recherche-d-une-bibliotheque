@@ -1,85 +1,54 @@
-import React, {Suspense, useEffect} from "react";
-import HeadBar from "../components/HeadBar";
+import React, { useEffect, useState } from "react";
 import { useBookList } from "../states/ListBookState";
-import Book from "../components/Book";
+import advancedSearch from "../config/advancedSearch";
+import simpleSearch from "../config/simpleSearch";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
+import BookList from "../components/BookList";
 import { useLocation } from "react-router-dom";
-import { ADVANCED_SEARCH_API, SIMPLE_SEARCH_API } from "../config/api";
+import ResultsHeader from "../components/ResultsHeader";
 
 const ListBook = () => {
-    const { listBook, setListBook, onLoading, setOnLoading, onError, setOnError } = useBookList();
+    const { listBook, setListBook } = useBookList();
+    const [onLoading, setOnLoading] = useState(true)
+    const [onError, setOnError] = useState(null);
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const query = queryParams.get("query");
     const searchType = queryParams.get("type");
+    const LIMIT = 10;
+    const offset = queryParams.get("offset");
 
     useEffect(() => {
-        const searchWord = async () => {
-            if (!query) {
-                setOnError("Veuillez saisir un mot-clé pour rechercher.");
-                return;
-            }
+        if (!query) {
+            setOnError("Veuillez saisir un mot-clé pour rechercher.");
+            return;
+        }
+        try {
             setOnLoading(true);
-            setOnError(null);
+            const searchFunction = searchType === "advanced"
+                ? advancedSearch(query, LIMIT, offset)
+                : simpleSearch(query, LIMIT, offset);
+            searchFunction.then((books) => {
+                setListBook(books)
+                setOnLoading(false)
+            })
+        } catch (error) {
+            setOnError(`Une erreur est survenue lors de la recherche: ${error}`);
+            setOnLoading(false)
+        }
+    }, [query, searchType, offset, setListBook]);
 
-            try {
-                const uri = searchType === "advanced" ? ADVANCED_SEARCH_API : SIMPLE_SEARCH_API;
-                const response = await fetch(`${uri}?query=${encodeURIComponent(query)}`);
-                const data = await response.json();
-<Suspense></Suspense>
-                if (!response.ok) {
-                    throw new Error(data.message || "Erreur lors de la recherche.");
-                }
-
-                setListBook(data);
-            } catch (error) {
-                setOnError(`Une erreur a été constatée : ${error.message}`);
-            } finally {
-                setOnLoading(false);
-            }
-        };
-
-        searchWord();
-    }, [query, searchType, setListBook, setOnLoading, setOnError]);
-
-    if (onLoading) {
-        return (
-            <div>
-                <HeadBar />
-                <Loading />
-            </div>
-        );
-    }
-
-    if (onError) {
-        return (
-            <div>
-                <HeadBar />
-                <Error message={onError} />
-            </div>
-        );
-    }
-
+    if (onLoading) return <Loading />;
+    if (onError) return <Error message={onError} />;
     if (!listBook || !listBook.results || listBook.results.length === 0) {
-        return (
-            <div>
-                <HeadBar />
-                <p>Aucun livre trouvé.</p>
-            </div>
-        );
+        return <Error message={"La liste de livre n'existe pas!"} />;
     }
 
     return (
         <div>
-            <HeadBar />
-            <ul className="book-list">
-                {listBook.results.map((book) => (
-                    <li key={book.id} className="book-item">
-                        <Book book={book} withInfo={false} />
-                    </li>
-                ))}
-            </ul>
+            <ResultsHeader titre={`Résultats des livres avec le mot <<${query}>>,${listBook.results.length} livres trouvés:`} />
+            <BookList books={listBook.results} />
         </div>
     );
 };
