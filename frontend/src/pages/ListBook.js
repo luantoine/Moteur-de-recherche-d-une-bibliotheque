@@ -3,20 +3,23 @@ import { useBookList } from "../states/ListBookState";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
 import BookList from "../components/BookList";
-import { useLocation } from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
 import ResultsHeader from "../components/ResultsHeader";
 import getBooksBySearch from "../config/getBooksBySearch";
+import {LIMIT_BOOK_TOSHOW, NUMBER_OF_BOOK} from "../config/config";
+import Pagination from "../components/Pagination";
 
 const ListBook = () => {
     const { listBook, setListBook } = useBookList();
     const [onLoading, setOnLoading] = useState(true)
     const [onError, setOnError] = useState(null);
     const location = useLocation();
+    const navigate = useNavigate();
     const queryParams = new URLSearchParams(location.search);
     const query = queryParams.get("query");
-    const searchType = queryParams.get("type");
-    const LIMIT = 10;
-    const offset = queryParams.get("offset");
+    const limit = queryParams.get("limit");
+    const [offset,setOffset] = useState(queryParams.get("offset"));
+    console.log(offset)
 
     useEffect(() => {
         if (!query) {
@@ -25,7 +28,7 @@ const ListBook = () => {
         }
         try {
             setOnLoading(true);
-            getBooksBySearch(query, LIMIT, offset).then((books) => {
+            getBooksBySearch(query, limit, offset).then((books) => {
                 setListBook(books)
                 setOnLoading(false)
             })
@@ -33,7 +36,13 @@ const ListBook = () => {
             setOnError(`Une erreur est survenue lors de la recherche: ${error}`);
             setOnLoading(false)
         }
-    }, [query, searchType, offset, setListBook]);
+    }, [query, limit, offset, setListBook]);
+
+    useEffect(() => {
+        const newParams = new URLSearchParams(location.search);
+        newParams.set("offset", offset);
+        navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+    }, [offset, navigate, location]);
 
     if (onLoading) return <Loading />;
     if (onError) return <Error message={onError} />;
@@ -45,6 +54,7 @@ const ListBook = () => {
         <div>
             <ResultsHeader titre={`Résultats des livres avec le mot <<${query}>>,${listBook.results.length} livres trouvés:`} />
             <BookList books={listBook.results} />
+            <Pagination offset={offset} setOffset={setOffset} limit={LIMIT_BOOK_TOSHOW} totalResults={NUMBER_OF_BOOK} />
         </div>
     );
 };

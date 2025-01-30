@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {LIMIT_BOOK_TOSHOW} from "../config/config";
 
 const SearchBar = () => {
-    const [searchType, setSearchType] = useState("simple");
     const navigate = useNavigate();
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
@@ -10,34 +10,26 @@ const SearchBar = () => {
     const [query, setQuery] = useState(queryParam || "");
     const [history, setHistory] = useState([]);
 
-    // Charger l'historique depuis le Local Storage au chargement du composant
     useEffect(() => {
         const storedHistory = JSON.parse(localStorage.getItem("searchHistory")) || [];
         setHistory(storedHistory);
     }, []);
 
-    // Enregistrer une recherche dans l'historique
     const saveToHistory = (query) => {
         const newHistory = [query, ...history].slice(0, 10); // Limiter à 10 éléments
         setHistory(newHistory);
         localStorage.setItem("searchHistory", JSON.stringify(newHistory));
     };
 
-    // Gestion de la recherche
     const searchOnclick = () => {
         if (query.trim() !== "") {
             saveToHistory(query);
-            navigate(`/books?query=${encodeURIComponent(query)}&limit=10&offset=0&type=${encodeURIComponent(searchType)}`);
+            navigate(`/books?query=${encodeURIComponent(query)}&limit=${LIMIT_BOOK_TOSHOW}&offset=0`);
         } else {
             alert("Veuillez entrer une recherche valide.");
         }
     };
 
-    const getPlaceholder = () => {
-        return searchType === "simple"
-            ? "Entrez un mot-clé pour une recherche simple"
-            : "Entrez un mot/phrase/regex pour une recherche avancée";
-    };
 
     return (
         <div
@@ -62,7 +54,7 @@ const SearchBar = () => {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={getPlaceholder()}
+                    placeholder={"Saissisez un mot ou une phrase"}
                     className="searchInput"
                     style={{
                         flex: 1,
@@ -88,46 +80,9 @@ const SearchBar = () => {
                 </button>
             </div>
 
-            {/* Boutons pour le type de recherche */}
-            <div
-                style={{
-                    display: "flex",
-                    gap: "10px",
-                    width: "100%",
-                    maxWidth: "600px",
-                }}
-            >
-                <button
-                    onClick={() => setSearchType("simple")}
-                    style={{
-                        flex: 1,
-                        padding: "10px",
-                        backgroundColor: searchType === "simple" ? "#4CAF50" : "#fff",
-                        color: searchType === "simple" ? "#fff" : "#333",
-                        border: "1px solid #ddd",
-                        borderRadius: "5px",
-                        cursor: "pointer",
-                    }}
-                >
-                    Recherche Simple
-                </button>
-                <button
-                    onClick={() => setSearchType("advanced")}
-                    style={{
-                        flex: 1,
-                        padding: "10px",
-                        backgroundColor: searchType === "advanced" ? "#4CAF50" : "#fff",
-                        color: searchType === "advanced" ? "#fff" : "#333",
-                        border: "1px solid #ddd",
-                        borderRadius: "5px",
-                        cursor: "pointer",
-                    }}
-                >
-                    Recherche Avancée
-                </button>
-            </div>
 
             {/* Historique des recherches */}
+            Historique des recherches
             {history.length > 0 && (
                 <div
                     style={{
@@ -152,7 +107,7 @@ const SearchBar = () => {
                                 }}
                                 onClick={() => {
                                     setQuery(item);
-                                    navigate(`/books?query=${encodeURIComponent(item)}&limit=10&offset=0&type=${encodeURIComponent(searchType)}`);
+                                    navigate(`/books?query=${encodeURIComponent(item)}&limit=${LIMIT_BOOK_TOSHOW}&offset=0`);
                                 }}
                             >
                                 {item}

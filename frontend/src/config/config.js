@@ -7,4 +7,7 @@ const config = {
     },
 };
 
+export const LIMIT_BOOK_TOSHOW = 12;
+export const NUMBER_OF_BOOK = 1664;
+
 export const API_BASE = config.development.backendUrl;
