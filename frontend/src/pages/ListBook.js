@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useBookList } from "../states/ListBookState";
-import advancedSearch from "../config/advancedSearch";
-import simpleSearch from "../config/simpleSearch";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
 import BookList from "../components/BookList";
 import { useLocation } from "react-router-dom";
 import ResultsHeader from "../components/ResultsHeader";
+import getBooksBySearch from "../config/getBooksBySearch";
 
 const ListBook = () => {
     const { listBook, setListBook } = useBookList();
@@ -26,10 +25,7 @@ const ListBook = () => {
         }
         try {
             setOnLoading(true);
-            const searchFunction = searchType === "advanced"
-                ? advancedSearch(query, LIMIT, offset)
-                : simpleSearch(query, LIMIT, offset);
-            searchFunction.then((books) => {
+            getBooksBySearch(query, LIMIT, offset).then((books) => {
                 setListBook(books)
                 setOnLoading(false)
             })

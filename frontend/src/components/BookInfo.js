@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import getBookById from "../config/getBookById";
 import BookDetails from "../components/BookDetails";
 import Error from "../components/Error";
-import Suggestions from "../components/Suggestions";
+import Suggestions from "../components/Suggestions"; // Import du composant Suggestions
 
 const BookInfo = () => {
     const [book, setBook] = useState(null);
@@ -15,7 +15,7 @@ const BookInfo = () => {
     const bookId = queryParams.get("bookId");
 
     useEffect(() => {
-        setOnLoading(true);  // Start loading before fetching
+        setOnLoading(true); // Démarre le chargement
         getBookById(bookId)
             .then((book) => {
                 setBook(book);
@@ -24,7 +24,7 @@ const BookInfo = () => {
             .catch((error) => {
                 setOnError(`Une erreur est survenue lors de la recherche: ${error}`);
                 setOnLoading(false);
-            })
+            });
     }, [bookId]);
 
     if (onLoading) return <Loading />;
@@ -34,9 +34,9 @@ const BookInfo = () => {
     }
 
     return (
-        <div className="book-details">
+        <div className="book-info-container" style={{ padding: "20px" }}>
             <BookDetails book={book} />
-            <Suggestions booksId={JSON.parse(book.neighbors).slice(0, 10)} />
+            <Suggestions />
         </div>
     );
 };
