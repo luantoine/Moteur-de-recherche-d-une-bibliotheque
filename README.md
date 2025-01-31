@@ -35,16 +35,11 @@ L'application devra inclure un moteur de recherche efficace et performant, inté
 
 ### 2. Recherche Avancée
 - Recherche par **expression régulière (RegEx)**.
-- Deux modes :
-  - Recherche dans la table d'indexage.
-  - Recherche dans le contenu des documents.
+- Recherche dans la table d'indexage.
 
 ### 3. Classement des Résultats
 - Tri des documents retournés selon un critère de pertinence.
-- Utilisation d'au moins un des trois indices de centralité suivants :
-  - **Closeness**
-  - **Betweenness**
-  - **PageRank**
+- Utilisation de l'algorithme de **PageRank**
 - Définition et justification de l'indice choisi.
 
 ### 4. Suggestion de Documents
