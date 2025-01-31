@@ -1,9 +1,26 @@
 ## Moteur de Recherche d'une Bibliothèque
 
+### Lancement du projet : 
+  #### Prérequis
+    Djangov5.1.4
+    numpyv1.26.4
+    networkxv3.4.2
+    scipyv1.15.0
+    psycopg2-binaryv2.9.10
+    tqdmv4.67.1
+    dockerv5.0.3
+    django-cors-headers
+    ReactJs
+
+  . 2 manière de lancer notre projet : 
+    - docker-compose up -d
+    - docker-compose up backend & docker-compose up frontend
+  . Se connecter ensuite sur le localhost:3000 pour le frontend 
+
 ### Équipe
 - Arnaud UTHAYAKUMAR
 - Andre VICENTE
-- ANTOINE LUONG
+- Antoine LUONG
 
 ### Objectif du Projet
 L'objectif de ce projet est de développer une application web/mobile permettant d'effectuer des recherches dans une bibliothèque de documents textuels. Cette bibliothèque contiendra au minimum **1664 livres**, chaque livre ayant une taille minimale de **10 000 mots**.
