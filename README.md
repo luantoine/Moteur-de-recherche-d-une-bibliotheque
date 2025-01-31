@@ -60,10 +60,3 @@ L'application devra inclure un moteur de recherche efficace et performant, inté
 - Affichage des résultats triés.
 - Affichage des suggestions de lecture.
 
-## Tests et Évaluation
-- **Tests de performance** :
-  - Courbes de temps d'exécution pour différents volumes de données.
-  - Comparaison des performances selon l'indice de classement choisi.
-- **Tests utilisateur** :
-  - Evaluation de la pertinence des résultats retournés.
-  - Recueil de feedbacks sur l'ergonomie et la qualité des suggestions.
