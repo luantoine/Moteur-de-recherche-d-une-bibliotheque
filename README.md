@@ -44,10 +44,7 @@ L'application devra inclure un moteur de recherche efficace et performant, inté
 
 ### 4. Suggestion de Documents
 - Proposition de documents similaires aux résultats les plus pertinents.
-- Approches possibles :
-  - Documents voisins dans le **graphe de Jaccard**.
-  - Documents les plus choisis par d'autres utilisateurs.
-  - Autre stratégie à définir et expliquer dans le rapport.
+- Documents voisins dans le **graphe de Jaccard**.
 
 ## Architecture de l'Application
 ### 1. Couche Data
