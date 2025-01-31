@@ -52,8 +52,8 @@ L'application devra inclure un moteur de recherche efficace et performant, inté
 - Construction et exploitation du **graphe de Jaccard**.
 
 ### 2. Couche Serveur
-- Implémentation des algorithmes de recherche et de classement.
-- Utilisation d'algorithmes d'indexation et de recherche efficace (éventuellement **KMP, Jaccard, PageRank**).
+- Implémentation des algorithmes de recherche et de classement.(**KMP, Automate avec la méthode d'Aho Ullman**)
+- Utilisation d'algorithmes d'indexation et de recherche efficace.
 
 ### 3. Couche Client
 - Interface utilisateur avec recherche simple et avancée.
