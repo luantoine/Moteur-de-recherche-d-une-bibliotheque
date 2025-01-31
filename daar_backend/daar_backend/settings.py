@@ -19,8 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-gyhwxhg966h@(z1=p!voep0yxo$9bqxy*-kfgp59&5@ka#+wt$'
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -76,17 +75,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'daar_backend.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -127,9 +115,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# MongoDB Configuration
-MONGO_CONNEXION = "mongodb+srv://yollowdream:sOtGzsmwTgfbj1NT@cluster0.zj4y6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 import os
 from dotenv import load_dotenv
@@ -172,7 +157,7 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'api': {  # Par exemple, pour les logs spécifiques à "api"
+        'api': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
