@@ -37,7 +37,7 @@ L'application devra inclure un moteur de recherche efficace et performant, inté
 - Recherche par **expression régulière (RegEx)**.
 - Deux modes :
   - Recherche dans la table d'indexage.
-  - Recherche dans le contenu des documents (risque de dégradation des performances).
+  - Recherche dans le contenu des documents.
 
 ### 3. Classement des Résultats
 - Tri des documents retournés selon un critère de pertinence.
