@@ -12,10 +12,10 @@
     django-cors-headers
     ReactJs
 
-  . 2 manière de lancer notre projet : 
+  2 manière de lancer notre projet : 
     - docker-compose up -d
     - docker-compose up backend & docker-compose up frontend
-  . Se connecter ensuite sur le localhost:3000 pour le frontend 
+  Se connecter ensuite sur le localhost:3000 pour le frontend 
 
 ### Équipe
 - Arnaud UTHAYAKUMAR
