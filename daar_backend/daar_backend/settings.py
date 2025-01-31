@@ -132,15 +132,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MONGO_CONNEXION = "mongodb+srv://yollowdream:sOtGzsmwTgfbj1NT@cluster0.zj4y6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 import os
+from dotenv import load_dotenv
 # PostgreSQL Configuration (dans le docker)
+load_dotenv()
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'defaultdb'),
-        'USER': os.environ.get('DB_USER', 'avnadmin'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'AVNS_swNH8lITHgvFjg-tf5M'),
-        'HOST': os.environ.get('DB_HOST', 'daar2025-luluantoinex-745c.b.aivencloud.com'),
-        'PORT': os.environ.get('DB_PORT', '25492'),
+        'NAME': os.getenv('DB_NAME', 'defaultdb'),
+        'USER': os.getenv('DB_USER', 'avnadmin'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
