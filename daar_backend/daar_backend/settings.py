@@ -116,21 +116,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-import os
-from dotenv import load_dotenv
-# PostgreSQL Configuration (dans le docker)
-load_dotenv()
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'defaultdb'),
-        'USER': os.getenv('DB_USER', 'avnadmin'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', ''),
-        'PORT': os.getenv('DB_PORT', '5432'),
-    }
-}
 
 LOGGING = {
     'version': 1,

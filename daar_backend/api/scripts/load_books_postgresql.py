@@ -5,19 +5,22 @@ import psycopg2
 from psycopg2.extras import Json
 from time import sleep
 from tqdm import tqdm
+from dotenv import load_dotenv
 
+
+load_dotenv()
 
 # Connexion à PostgreSQL
 conn = psycopg2.connect(
-    dbname="library_db",
-    port="5432",
-    user="postgres",
-    password="daar2025",
-    host="db"
+    dbname=os.getenv('DB_NAME', 'defaultdb'),
+    port=os.getenv('DB_PORT', '5432'),
+    user=os.getenv('DB_USER', 'avnadmin'),
+    password=os.getenv('DB_PASSWORD', ''),
+    host=os.getenv('DB_HOST', 'localhost')
 )
 cursor = conn.cursor()
 
-def fetch_and_store_books(limit=1664):
+def load_books(limit=1664):
     """
     Récupère jusqu'à limit livres depuis l'API Gutendex :
       - L'id
@@ -67,7 +70,6 @@ def fetch_and_store_books(limit=1664):
             # URL image 
             cover_url = formats.get("image/jpeg", None)
 
-            # Télécharger le texte pour avoir tout le texte du livre
             text_content = None
             if text_url:
                 try:
@@ -117,7 +119,7 @@ def fetch_and_store_books(limit=1664):
     print(f"=== Fin {fetched_count} livres stockés ou mis à jour ===")
 
 def main():
-    fetch_and_store_books(limit=1664)
+    load_books(limit=1664)
 
 if __name__ == "__main__":
     main()
